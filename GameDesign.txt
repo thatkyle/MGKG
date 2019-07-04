@@ -1,0 +1,163 @@
+****** SKILL CHECKS ******
+
+A circular indicator apppears with a spinning arrow hand (.66-2 revs per sec)
+The indicator has 6 colored zones:
+Black - Wind up - no effect/recast -	33.4% (33.4%)
+Dark Blue - Perfect - 130% dmg -		00.4% (00.4%)
+Blue - Excellent - 115% damage -		03.0% (01.5%)
+Green - Great - 100% damage -		13.4% (06.7%)
+Yellow - Good - 85% damage -			23.4% (11.7%)
+Red - Mistimed - 70% damage - 		26.4% (13.2%)
+Black zone is wind up arc with 1 timing zone.
+Each colored zone except Dark Blue corresponds to 2 timing zones.
+Timing range (known as SPR (secs per rev)) scales from 0.5 to 1.5 SPR
+Black = 		T0 (time start) to T0 + SPR * 0.334
+Red = 			T0 + SPR * 0.335 to T0 + SPR * 0.466
+Yellow = 		T0 + SPR * 0.467 to T0 + SPR * 0.583
+Green = 		T0 + SPR * 0.584 to T0 + SPR * 0.650
+Blue = 			T0 + SPR * 0.651 to T0 + SPR * 0.665
+Dark Blue = 	T0 + SPR * 0.666 to T0 + SPR * 0.669
+Blue = 			T0 + SPR * 0.670 to T0 + SPR * 0.684
+Green = 		T0 + SPR * 0.685 to T0 + SPR * 0.751
+Yellow =		T0 + SPR * 0.752 to T0 + SPR * 0.868
+Red =			T0 + SPR * 0.869 to T0 + SPR * 1.000
+
+****** SPELL CASTING ******
+
+Spellcast
+Q.buttonDown() = PC1.spell1.startCast()
+W.buttonDown() = PC1.spell2.startCast()
+E.buttonDown() = PC1.spell3.startCast()
+A.buttonDown() = PC2.spell1.startCast()
+S.buttonDown() = PC2.spell2.startCast()
+D.buttonDown() = PC2.spell3.startCast()
+
+const startCast = () => {
+	const spellTiming = timeout.SPR() => {
+		playTimingGameAnimation();
+		T0 = now();									timestamp when button is pressed
+		T1 = currentSpell.buttonUp().now(); 		timestamp when button is released
+		return T1 - T0;								time between keydown and keyup in milliseconds
+	}, currentSpell.finishCast(-1, mousexy);		if timeout.SPR() expires with button still pressed down, the currentSpell "misses" and either goes on a partial CD or does weaker damage than red zone
+	currentSpell.finishCast(spellTiming, mousexy); 	if the key is released in time, the spell finishes casting. The result of the spell cast is determined by the spellTiming
+}
+cast function logic:
+when spell key is pressed, start a timer that times out after SPR seconds
+if : 	the timer times out without the spell key being released, the spell misses
+else : 	spellTiming, the time between keyUp and keyDown is returned
+			the spell finishes casting, the result of the spell is determined by spellTiming and mousexy
+			spellTiming determines the spells power
+			mousexy is the mouse's position when the spell key is released,
+				if mousexy is on an enemy, the result of the spell is applied to that enemy
+				if mousexy is not on an enemy, the spell misses entirely, putting that spell (and global cooldown?) on a partial cooldown
+			if the key is not released in time, mousexy is the mouse's position when the timer expires
+	if finishCast is passed -1, the spell partially misses, doing a random amount of damage between 30% and 69% of max damage
+	if mousexy is not on an enemy, the spell misses entirely, putting the spell on 50% CD, and activating a 1 second global CD for the PC (PC is staggered and can't act for 1 second) 
+
+
+****** ENEMY DESIGN GOALS ******
+
+Different enemies need to have specific weaknesses. Specific elements, combos and status
+effects should be needed to take them down.
+Big channeling spells, heals, AOE's that can be interrupted
+Elemental weaknesses
+Burst damage vs dots
+
+****** ENEMY CATEGORIES ******
+
+Enemy categories (general): - The purpose of this list is to define enemy archetypes without consideration of specific mechanics
+Glass cannons		High burst damage, long cooldowns, susceptible to focus fire, high priority targets to be killed quickly
+Tank healers		Lots of health, channeling heals, can buff teammates, best to silence, interrupt, or stack dots on, while focusing higher priority enemies
+Squishy healers		Squishy, strong heals with long cooldowns, strong buffs and debuffs. Can either nullify buffs and debuffs and try to focus down other enemies between heals, or focus down (the risk in focusing down is that the healer outheals the damage, wasting PC cooldowns and resources)
+Channelers			High impact casters with moderate health, may be hard to focus/burst down, susceptible to silences and interrupts
+Divine Shielded		Impervious to next attack/ status effect, best to soften with a weak attack before using stronger attacks, as stronger attacks will entirely eat the shield
+Heavy hitters		Hit hard and hard to kill, best countered by sleeping, freezing or debilitating and saving for last
+Frenzied			Start weak, power (offensive and defensive) ramps up over time, should be ignored early, but need to be vigilant of power ramp
+Synergists			Gain power based on the strength of their alive allies. Killing one or more of their allies can significantly reduce their strength, or not have much of an impact if the wrong allies are killed. The best strategy to use vs synergists is more situational. If there is an opportunity to quickly take out high value allies, it will significantly weaking the synergist. On the other hand, if allies are tankier, the synergist becomes extremely tanky, and may be best to deal with like a heavy hitter.
+Brawlers			High health, moderate attack, low utility. Best dealt with by stacking dots
+Shapeshifters		Start with average health, average damage, and average utility. Suddenly and randomly become stronger or weaker. Should be ignored when weak, and mitigated/killed when strong.
+Dark				Have a intermittently changing elemental/status/combo weakness while remaining highly impervious to other elements/statuses/combos. Moderate to high threat level. Should only attack when you have the correct combo available
+Absorbers			Always become stronger when attacked, but cycle between strongly absorbent and weakly absorbent.
+Lovers				2 enemies can be assigned as eachother's lovers, and each becomes stronger when their lover is attacked. When their lover is killed, they have a chance to become enraged or hopeless, dramatically strengthening or weakening them.	
+Martyr				Team becomes stronger when they die
+Soul stealer		Feeds off their weakening allies, becoming increasingly stronger as allies are weakened and slain
+** upon further thought, this Time Waster enemy type seems like it will only cause frustration with little payoff, and quickly become an annoyance. The idea of feinting strength to draw attention is interesting, but this is not a good way to implement that idea. 
+** Time wasters	A constant annoyance, but little threat. Designed to attempt to divert and waste player characters resources. One way they do this is by inflicting multiple debuffs on a PC for a very limited duration, or by channelling weak spells (when player sees channel, their instinct is to interrupt the channel, as channels tend to be strong spells, but in this case it is a waste, as the channeled spell is actually weak). The only danger with this enemy type is it becoming predictable and boring. Maybe it has other effects such as making timing checks more difficult or making it harder for the player to see. Annoyances that don't affect gameplay much.
+
+** This feels like too many things. I need to define an MVP with limited scope and stick to it. Just build the MVP and you will get more insight on where to go from there, both in terms of what ideas sound fun, and what ideas will be more fun and easier to implement.
+
+
+****** STATUS EFFECTS ******
+
+Status Effects:
+Stunned			Interrupts channels, stops cooldown recovery and actions from being taken while stunned
+Slowed			Reduced CDR for all spells, slows channel time
+Poisoned 		DOT and damage dealt reduced
+Burned			DOT and damage received increased
+Frozen			Can't act or be acted upon, cooldowns continue to recover, (should it interrupt channels or would that be OP?)
+Asleep			Unable to act, wakes upon taking damage from any source, including dots and AOEs, or can wake self by chance after a period of time (minSleepTime, maxSleepTime, chanceToWakePerTick, numberOfTicks)
+Confused		Chance to attack own allies
+Cursed			Reduces spell power by a %, more effective vs burst damage dealers and healers, less effective vs enemies with dots
+Silenced		Prevents ultimate from being cast. If ultimate: 1) is already silenced, 2) is on cooldown, or 3) doesn't exist, block a random spell from being cast, cannot stop physical attacks from being performed
+Bleeding		DOT, amplifies other dots, and receives reduced healing
+Shocked			Increases effectiveness of all other status effects (mostly only useful for bosses)
+Petrified		Periodically mini-stunned, preventing action, interrupting channels, and putting all spells on a small CD (does not put channels on cooldown for anywhere near how long stun does)
+Vulnerable		Reduces elemental resistances
+Unlucky			Can't crit, attacks have chance to do moderately to significantly reduced damage
+Debilitated		Significantly reduce damage dealt
+
+***** These status effects need to have a purpose behind them. There need to be a specific enemies that are really hurt by specific statuses
+or combinations of statuses. Remove statuses that are unlikely to be useful. Design enemy types and status types together so the design decisions inform eachother
+
+
+****** SPELL EFFECTS ******
+
+Spell Effects:
+Elemental damage
+Physical damage
+True damage
+Heal
+Buff
+Debuff				Remove buffs
+
+
+******* SHIELDS and WARDS ********
+
+
+General Design:
+
+There are visual and audio indicators indicating when and who an enemy is about to attack, as well as the attack type they are about to use
+Successful interpretation of this information gives the player a chance to use the correct defending moves with the correct characters to block a portion of incoming damage
+Successfully blocking an incoming attack requires:
+	1) The correct character to use the move. If a player which is not being attacked using a defending move, it will have no effect.
+	2) The correct defensive move to be used. Shields block physical damage more effectively than spells, spellshields don't block physical damage, certain wards block certain types of damage and not others.
+	3) The correct timing window, shields only last 1-3 seconds. If the shield effect expires before the attack comes in, it does not block damage.
+	4) Timing the skill check. Using any defensive action triggers a skill check which determines the effectivenesss of the action. Completely missing the skill check causes the action to fail, doing nothing.
+
+
+Types:
+
+Physical damage blocking with shields and weapons
+	When an enemy indicates a forthcoming physical attack, the player has a timing window to parry/counter the attack
+	All results of the timing window check result in a short global cooldown
+		Missing the timing window does not block damage
+		Mistiming blocks a portion of the damage
+		Timing correctly blocks a larger portion of damage
+		Timing excellently blocks the same damage as above, but also parries, staggering the enemy with an additional global cooldown which adds to the enemy's cooldowns
+		Timing perfectly blocks, parries, staggers, and provides an additional timing check for a counter attack, which will always deal some damage, and deals more when timed well
+Spell shields
+	When an enemy indicates a forthcoming magic attack, the player can activate a 1.5-3 second spell shield which absorbs a portion of incoming damage
+	Activating the spell shield has a timing check which determines the strength and duration of the shield
+	Whether the spell shield blocks damage depends on whether the shield is still active when the enemy spell hits
+	Even a perfectly timed spell shield can fail to block damage if the shield expires before the enemy is hit by any spells
+		Missing the timing check blocks no damage
+		Mistiming blocks some damage
+		Timing correctly blocks more damage
+		Timing well blocks more damage and temporarily reduces PC's CD's and increases their spell power
+		Timing perfectly blocks more damage, buffs the PC as above, and triggers a second skill check to reflect a portion of the damage
+Wards
+	Wards last the length of the battle, but can be switched by casting a different ward
+	Specific wards reduce specific types of damage and mitigate certain status effects
+	Wards that are ineffective against enemy damage types and debuff types will have little to no effect
+	Wards have no skill checks, but instead have a short channel time, which if interrupted removes all wards for that slot and increases the cooldown penalty
+	Wards trigger global and local PC cooldowns

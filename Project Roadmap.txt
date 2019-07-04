@@ -1,0 +1,123 @@
+Phase 1 - MVP
+
+A successful MVP will:
+
+DONE
+1) Render a blank gray background
+
+2) Render 1 player character sprite and 1 enemy sprite on top of the background
+	a) The sprites have a basic breathing animation
+
+Implementation:
+World scene
+Player objects
+
+3) Render a UI spellbar at the bottom of the screen
+	a) The spellbar will show 2 PC spells with hotkeys and cooldown timers
+		i) The cooldown timer for the relevant spell will:
+			- Darken the UI for that spell when on CD
+			- Place a cooldown text countdown overlay in 10ths of a second (5,4.9... 0.2, 0.1)
+			- When the cooldown timer and text hit 0.0, the text overlay is removed and the UI for the spell lightens to its normal value
+
+Implementation:
+UI Scene
+
+4) Render player character and enemy health bars and damage indicators
+	a) Health bars appear below their sprites
+	b) Damage indicators generate colored text above the character
+	c) When player / enemy receives damage
+		i) The damage indicator appears for 1 second than disappears
+		i) The damage indicator text shows the correct damage amount (always rounded up to the next integer)
+		ii) The health bar updates correctly
+
+Implementation:
+Health bars go with static UI
+Separate damage indicators (dynamic UI) into their own scene
+
+5) Demonstrate spell casting
+	a) Player character has 2 spells
+	b) Spells are activated by hotkey
+		i) The correct spell is cast for the correct hotkey
+		ii) Only 1 spell can be cast at a time, pressing multiple hotkeys activates only the spell for the first key pressed
+		iii) Hotkey presses do not register when their spell is on local / global cooldown or when the skill check is active
+	c) When a valid hotkey is pressed, a skill check appears near the current mouse position
+		i) When the skill check misses, the spell does not fire and a short global cooldown is activated
+		ii) When the skill check is passed:
+			- The correct damage modifier is applied
+	d) Basic spell animation plays
+		i) spell travels from player to enemy and vice versa
+	e) Sound plays on cast
+	f) Sound plays on hit
+
+Implementation:
+Sprite sheet for spell
+2 unique sound effects
+Spell UI rendered in its own scene
+Collision checking is not needed, instead emit a signal with spell caster, target, spell, and animation timing information
+	- After the animation time elapses, process the logic based on caster, target, spell, ward, spellshield, etc.
+
+6) Demonstrate skill check functionality
+	a) Skill checks appear for all relevant actions
+	b) The player receives feedback based on the result of the skill check
+		i) Correct colored text appears ("Miss", "Poor", "Good", etc.)
+		ii) Correct sound effect plays
+	c) Skill checks pass / fail correctly
+	d) Skill checks apply the correct modifier to their action
+
+Implementation:
+Basic UI is done
+Integrate logic with other features
+Render scene separately from other UI components
+
+7) Demonstrate cooldown functionality
+	a) The correct cooldown timer and UI element triggers for the relevant action
+	b) The internal cooldown timer and UI correctly match
+	c) Global and local cooldowns trigger correctly
+		i) Global and local cooldowns are additive and add correctly
+		ii) Expiration of global cooldown does not cause the local cooldown to expire and vice versa
+			- ** Internally, there should only be one value for each cooldown triggered which is the sum of local and global cooldowns
+			- ** In other words, local and global cooldowns should not apply to spells independent of eachother, one cooldown is applied, and any additional cooldowns are added to it
+	d) Special case - When one spell is on CD, and the skill check for the other spell fails, a global CD should be applied / added to both spells correctly
+		i) This means that the global cooldown will need to be added to the timer event for the spell already on CD, and
+		ii) Relevant UI components update correctly
+
+Implementation:
+Create a factory function that generates timer events with passed params
+
+8) Demonstrate spell shield and ward functionality
+	a) Spell shields and wards cast correctly
+	b) Wards do not have a skill check but demonstrate a short channeling time during which other spells / hotkeys are disabled
+	c) Skill checks for spell shields correctly apply to the relevant action and cause any additional actions to trigger (damage modifier, buff, spell reflection)
+	d) Wards and spell shields block the correct amount of damage
+		i) The damage text indicator correctly updates
+		ii) The health bar updates with the correct amount of damage after damage is blocked
+		iii) Wards and spellshields provide additive damage reduction to eachother
+		iv) The summed damage reduction is correctly updated, damage text updates and ui updates correctly
+	e) Wards do not expire until the battle ends
+	f) Spell shields expire after the correct time
+	g) Spell shields only block damage when active
+	h) A spell shield image / sprite is correctly overlayed on top of the character without blocking the character (overlay blank space is transparent)
+	i) A sound plays when the spell shield successfully blocks the spell
+	j) The spell shield disappears after blocking a spell
+
+Implementation:
+Graphic overlays for 1 spell shield and 1 ward in their own scene
+Timer events for spell shields
+Skill check for spell shield cast
+Timer event and visual channeling indicator for ward
+Collision checking is not needed, instead emit a signal with spell caster, target, spell, and animation timing information
+
+9) Demonstrate basic enemy functionality and AI
+	 a) Enemy blocks spell when it can
+	 b) Enemy casts alternating spells as they come off cooldown
+	 c) A different enemy sprite animation plays when they are casting spell vs spell shield (2 different sprite animationss, 1 for both offensive spells cast, 1 for spell shield cast)
+
+Implementation:
+Seperate enemy sprites, static data, and behavior into their own objects / factory functions
+
+10) PC / enemy die when health reaches 0
+
+Implementation:
+Sprite death animation
+If character health <= 0 -> sprite.deathAnimation()
+Don't show negative values on health bar UI
