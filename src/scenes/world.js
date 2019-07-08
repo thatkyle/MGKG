@@ -242,9 +242,9 @@ class BattleScene extends Phaser.Scene {
                 r = Math.floor(Math.random() * this.heroes.length);
             } while(!this.heroes[r].living) 
             // call the enemy's attack function 
-            this.units[this.index].attack(this.heroes[r]);  
+            this.units[this.index].attack(this.heroes[r]);
             // add timer for the next turn, so will have smooth gameplay
-            this.time.addEvent({ delay: 3000, callback: this.nextTurn, callbackScope: this });
+            this.time.addEvent({ delay: 1000, callback: this.nextTurn, callbackScope: this });
         }
     }   
     // check for game over or victory
@@ -268,8 +268,8 @@ class BattleScene extends Phaser.Scene {
         if(action == "attack") {            
             this.units[this.index].attack(this.enemies[target]);              
         }
-        // next turn in 3 seconds
-        this.time.addEvent({ delay: 3000, callback: this.nextTurn, callbackScope: this });        
+        // next turn in 1.5 seconds
+        this.time.addEvent({ delay: 500, callback: this.nextTurn, callbackScope: this });        
     }   
     endBattle() {       
         // clear state, remove sprites
@@ -634,7 +634,7 @@ var Message = new Phaser.Class({
         this.visible = true;
         if(this.hideEvent)
             this.hideEvent.remove(false);
-        this.hideEvent = this.scene.time.addEvent({ delay: 2000, callback: this.hideMessage, callbackScope: this });
+        this.hideEvent = this.scene.time.addEvent({ delay: 1000, callback: this.hideMessage, callbackScope: this });
     },
     hideMessage: function() {
         this.hideEvent = null;
