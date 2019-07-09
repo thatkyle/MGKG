@@ -1,3 +1,6 @@
+// This is the standalone version of boot/battle/ui/units/message/etc. for the battle sequence for dev/testing, it has not been split into it's component scenes.
+// I am keeping this as a working version of the skill/timing check feature in case the modular files breaks (boot, battle, ui, message, units, etc.)
+
 class BootScene extends Phaser.Scene {
     constructor() {
         super({ key: 'BootScene' });
@@ -283,7 +286,7 @@ class BattleScene extends Phaser.Scene {
         // sleep the UI
         this.scene.sleep('UIScene');
         // return to WorldScene and sleep current BattleScene
-        this.scene.switch('WorldScene');
+        // this.scene.switch('WorldScene');
     }
 };
 

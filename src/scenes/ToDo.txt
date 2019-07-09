@@ -1,0 +1,5 @@
+7/8/2019 17:27
+
+Rename world to battleStandalone
+Rename clock to clockStandalone
+Create new separate sceness for boot + config, clock, battle, UI, units, etc.
